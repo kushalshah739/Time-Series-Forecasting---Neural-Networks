@@ -1,1 +1,13 @@
 # Time-Series-Forecasting---Neural-Networks
+
+
+This project is based on Time Series Analysis/Forecasting using Recurrent Neural Networks. 
+- RNNs are neural networks with hidden states and loops, allowing information to persist over time. RNNs use the idea of hidden state (or memory) in order to be able to generate an outcome by updating each neuron into a new computational unit that is able to remember what it has seen before. RNN units are described as recurrent units because the type of dependence of the current value on the previous event is recurrent or repeating.
+
+Two deep learning techniques, specifically RNN are explored here: 
+a. GRU (Gated Recurrent Units):
+- 
+
+b. LSTM
+-During backpropagation, recurrent neural networks suffer from this problem because the gradient decreases as it backpropagates through time. If a gradient value becomes extremely small, it is not able to contribute to the network learning process. LSTM solves this problem by introducing changes to RNN architecture through gates and cell state, which reduce the gradient descent error over time.
+- LSTM having a good unit memory and ability to capture patterns in long term data makes it favorable for ML/DL applications like energy forecasting and more.
