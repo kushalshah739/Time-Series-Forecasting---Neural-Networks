@@ -80,12 +80,6 @@ dataset = np.reshape(dataset, (-1, 1))
 scaler = MinMaxScaler(feature_range=(0, 1))
 dataset = scaler.fit_transform(dataset)
 
-#train_size = int(len(dataset) * 0.70) #0.8
-
-#test_size = len(dataset) - train_size
-#train, test = dataset[0:train_size,:], dataset[train_size:len(dataset),:]
-
-
 valid_st_data_load = '2012-01-01 00:00:00'
 test_st_data_load = '2014-01-01 00:00:00'
 
@@ -217,31 +211,5 @@ print(mape(final["predict"], final["actual"]))
 
 
 (len(final[abs(final['actual']-final['predict'])<=200]))/len(final)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
