@@ -22,7 +22,6 @@ from keras.callbacks import EarlyStopping
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
-
 import seaborn as sns
 from statsmodels.tsa.stattools import adfuller
 
@@ -32,16 +31,11 @@ from statsmodels.tsa.stattools import adfuller
 data = pd.read_excel('./GEFCom2014 Data/GEFCom2014-E_V2/GEFCom2014-E.xlsx',sheet_name='Hourly')
 data = data.dropna()
 data.Date +=  pd.to_timedelta(data.Hour, unit='h')
-
 data = data.set_index('Date')
 ts_data = data.copy()
 ts_data = ts_data[['load','T']]
 ts_data_load = ts_data['load']
-
-
-
 ts_data.dtypes
-
 ts_data.describe()
 
 decomposition = sm.tsa.seasonal_decompose(ts_data_load['2012-07-01':'2012-12-31'], model = 'additive')
@@ -85,14 +79,14 @@ dataset = dataset.astype('float32')
 dataset = np.reshape(dataset, (-1, 1))
 scaler = MinMaxScaler(feature_range=(0, 1))
 dataset = scaler.fit_transform(dataset)
-train_size = int(len(dataset) * 0.70) #0.8
+
+#train_size = int(len(dataset) * 0.70) #0.8
+
+#test_size = len(dataset) - train_size
+#train, test = dataset[0:train_size,:], dataset[train_size:len(dataset),:]
 
 
-test_size = len(dataset) - train_size
-train, test = dataset[0:train_size,:], dataset[train_size:len(dataset),:]
-
-
-test_st_data_load = '2012-01-01 00:00:00'
+valid_st_data_load = '2012-01-01 00:00:00'
 test_st_data_load = '2014-01-01 00:00:00'
 
 # train
@@ -103,14 +97,14 @@ train = np.reshape(train, (-1, 1))
 scaler = MinMaxScaler(feature_range=(0, 1))
 train = scaler.fit_transform(train)
 
-# test
-test = pd.DataFrame(ts_data_load.copy().loc[(ts_data_load.index >= test_st_data_load) &
+# valid
+valid = pd.DataFrame(ts_data_load.copy().loc[(ts_data_load.index >= valid_st_data_load) &
                                              (ts_data_load.index < test_st_data_load)])  #[['load']]
-test = test['load'].values
-test = test.astype('float32')
-test = np.reshape(test, (-1, 1))
+valid = valid['load'].values
+valid = valid.astype('float32')
+valid = np.reshape(valid, (-1, 1))
 scaler = MinMaxScaler(feature_range=(0, 1))
-test = scaler.fit_transform(test)
+valid = scaler.fit_transform(valid)
 
 # test
 test = pd.DataFrame(ts_data_load.copy().loc[(ts_data_load.index >= test_st_data_load)])  #[['load']]
@@ -135,7 +129,7 @@ def create_dataset(dataset, look_back=1):
 # reshape into X=t and Y=t+1
 look_back = 30
 X_train, Y_train = create_dataset(train, look_back)
-X_test, Y_test = create_dataset(test, look_back)
+X_valid, Y_valid = create_dataset(valid, look_back)
 X_test, Y_test = create_dataset(test, look_back)
 
 
@@ -145,21 +139,20 @@ Y_train.shape
 
 # reshape input to be [samples, time steps, features]
 X_train = np.reshape(X_train, (X_train.shape[0], 1, X_train.shape[1]))
-X_test = np.reshape(X_test, (X_test.shape[0], 1, X_test.shape[1]))
+X_valid = np.reshape(X_valid, (X_valid.shape[0], 1, X_valid.shape[1]))
 X_test = np.reshape(X_test, (X_test.shape[0], 1, X_test.shape[1]))
 
 
 X_train.shape
+
 
 model = Sequential()
 model.add(LSTM(100, input_shape=(X_train.shape[1], X_train.shape[2])))
 model.add(Dropout(0.2))
 model.add(Dense(1))
 model.compile(loss='mean_squared_error', optimizer='adam')
-
-history = model.fit(X_train, Y_train, epochs=20, batch_size=70, testation_data=(X_test, Y_test), 
+history = model.fit(X_train, Y_train, epochs=20, batch_size=70, validation_data=(X_valid, Y_valid), 
                     callbacks=[EarlyStopping(monitor='val_loss', patience=10)], verbose=1, shuffle=False)
-
 # Training Phase
 model.summary()
 
@@ -168,24 +161,22 @@ model.summary()
 
 # make predictions
 train_predict = model.predict(X_train)
-test_predict = model.predict(X_test)
+valid_predict = model.predict(X_valid)
 # invert predictions
 train_predict = scaler.inverse_transform(train_predict)
-test_predict = scaler.inverse_transform(test_predict)
+valid_predict = scaler.inverse_transform(valid_predict)
 Y_train = scaler.inverse_transform([Y_train])
-Y_test = scaler.inverse_transform([Y_test])
-
-
+Y_valid = scaler.inverse_transform([Y_valid])
 
 print('Train Mean Absolute Error:', mean_absolute_error(Y_train[0], train_predict[:,0]))
 print('Train Root Mean Squared Error:',np.sqrt(mean_squared_error(Y_train[0], train_predict[:,0])))
-print('test Mean Absolute Error:', mean_absolute_error(Y_test[0], test_predict[:,0]))
-print('test Root Mean Squared Error:',np.sqrt(mean_squared_error(Y_test[0], test_predict[:,0])))
-print('R2:', r2_score(Y_test[0], test_predict[:,0]))
+print('valid Mean Absolute Error:', mean_absolute_error(Y_valid[0], valid_predict[:,0]))
+print('valid Root Mean Squared Error:',np.sqrt(mean_squared_error(Y_valid[0], valid_predict[:,0])))
+print('R2:', r2_score(Y_valid[0], valid_predict[:,0]))
 
 plt.figure(figsize=(8,4))
 plt.plot(history.history['loss'], label='Train Loss')
-plt.plot(history.history['val_loss'], label='test Loss')
+plt.plot(history.history['val_loss'], label='valid Loss')
 plt.title('model loss')
 plt.ylabel('loss')
 plt.xlabel('epochs')
@@ -226,6 +217,14 @@ print(mape(final["predict"], final["actual"]))
 
 
 (len(final[abs(final['actual']-final['predict'])<=200]))/len(final)
+
+
+
+
+
+
+
+
 
 
 
