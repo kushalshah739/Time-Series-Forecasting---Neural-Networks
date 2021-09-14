@@ -6,7 +6,7 @@ This project is based on Time Series Analysis/Forecasting using Recurrent Neural
 
 Two deep learning techniques, specifically RNN are explored here: 
 a. GRU (Gated Recurrent Units):
-- 
+- To solve the vanishing gradient problem of a standard RNN, GRU uses, so-called, update gate and reset gate. Basically, these are two vectors which decide what information should be passed to the output.
 
 b. LSTM
 -During backpropagation, recurrent neural networks suffer from this problem because the gradient decreases as it backpropagates through time. If a gradient value becomes extremely small, it is not able to contribute to the network learning process. LSTM solves this problem by introducing changes to RNN architecture through gates and cell state, which reduce the gradient descent error over time.
